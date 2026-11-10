@@ -11,7 +11,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CsiDataApiService } from '../../../core/services/csi-data-api.service';
-import { PaletteToastService } from '../../../core/services/palette-toast.service';
 import { CommonPageHeader } from '../../../common/cards/common-page-header/common-page-header';
 import { ColorStandard } from '../../../core/models/csi.models';
 
@@ -23,43 +22,146 @@ export interface NeighborItem extends ColorStandard {
   selector: 'app-nearby-explorer',
   standalone: true,
   imports: [CommonModule, FormsModule, CommonPageHeader],
-  templateUrl: './nearby-explorer.html'
+  templateUrl: './nearby-explorer.html',
+  styles: [
+    `
+      .picker-grid {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 22px;
+        align-items: start;
+      }
+      .nearby-bottom-grid {
+        grid-template-columns: 340px 1fr;
+        align-items: start;
+      }
+      .sv-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1.6 / 1;
+        border-radius: 13px;
+        overflow: hidden;
+        box-shadow: var(--sh-md);
+        cursor: crosshair;
+        touch-action: none;
+      }
+      .sv-handle {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.4);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      .hue-wrap {
+        position: relative;
+        margin-top: 16px;
+        height: 20px;
+        border-radius: 10px;
+        overflow: visible;
+        cursor: pointer;
+        touch-action: none;
+        background: linear-gradient(
+          to right,
+          #f00 0%,
+          #ff0 17%,
+          #0f0 33%,
+          #0ff 50%,
+          #00f 67%,
+          #f0f 83%,
+          #f00 100%
+        );
+      }
+      .hue-handle {
+        position: absolute;
+        top: 50%;
+        width: 16px;
+        height: 26px;
+        border-radius: 6px;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.35);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      .nb-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        gap: 10px;
+      }
+      .nb-tile {
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        padding: 9px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.12s;
+      }
+      .nb-tile:hover {
+        border-color: var(--leaf);
+      }
+      @media (max-width: 960px) {
+        .picker-grid,
+        .nearby-bottom-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    `
+  ]
 })
 export class NearbyExplorer implements AfterViewInit {
-  @ViewChild('colorCanvas') colorCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('svCanvas') svCanvas?: ElementRef<HTMLCanvasElement>;
 
   readonly api = inject(CsiDataApiService);
-  readonly toast = inject(PaletteToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  readonly pickH = signal<number>(352);
+  readonly pickS = signal<number>(0.85);
+  readonly pickV = signal<number>(0.72);
+
   readonly nearId = signal<string>('');
-  readonly nearRad = signal<number>(10);
-  readonly nearVal = signal<number>(88);
-  readonly nearCustom = signal<{ hex: string; L: number; a: number; b: number; label: string } | null>(
-    null
-  );
-  readonly customL = signal<number>(52);
-  readonly customA = signal<number>(12);
-  readonly customB = signal<number>(18);
+  readonly nearRad = signal<number>(5);
+  readonly searchQuery = signal<string>('');
+  readonly labL = signal<string | number | null>('');
+  readonly labA = signal<string | number | null>('');
+  readonly labB = signal<string | number | null>('');
+  readonly labMsg = signal<{ warn?: string; name?: string; de?: number } | null>(null);
 
-  private canvasDragging = false;
+  private dragSV = false;
+  private dragHue = false;
 
-  readonly anchor = computed(() => {
-    const custom = this.nearCustom();
-    if (custom) {
-      return {
-        id: 'CUSTOM',
-        n: custom.label || 'Custom Picked Color',
-        hex: custom.hex,
-        L: custom.L,
-        a: custom.a,
-        b: custom.b,
-        fam: 'Custom LAB',
-        q: 'Emerging' as const
-      };
-    }
+  readonly pickedColor = computed(() => {
+    const h = this.pickH();
+    const s = this.pickS();
+    const v = this.pickV();
+    const [r, g, b] = this.hsv2rgb(h, s, v);
+    const [hr, hg, hb] = this.hsv2rgb(h, 1, 1);
+    return {
+      hex: this.rgb2hex(r, g, b).toUpperCase(),
+      hueHex: this.rgb2hex(hr, hg, hb),
+      lab: this.rgb2lab(r, g, b)
+    };
+  });
+
+  readonly nearestMatch = computed<{ c: ColorStandard; de: number } | null>(() => {
     const pool = this.api.colorPool();
+    if (!pool.length) return null;
+    const lab = this.pickedColor().lab;
+    let best: { c: ColorStandard; de: number } | null = null;
+    for (const c of pool) {
+      const de = this.api.cmcDE(lab, [c.L, c.a, c.b]);
+      if (!best || de < best.de) {
+        best = { c, de };
+      }
+    }
+    return best;
+  });
+
+  readonly anchor = computed<ColorStandard | undefined>(() => {
+    const pool = this.api.colorPool();
+    if (!pool.length) return undefined;
     const id = this.nearId();
     return pool.find((c) => c.id === id) || pool[0];
   });
@@ -77,7 +179,7 @@ export class NearbyExplorer implements AfterViewInit {
       }))
       .filter((c) => c.de <= rad)
       .sort((x, y) => x.de - y.de)
-      .slice(0, 24);
+      .slice(0, 40);
   });
 
   ngAfterViewInit(): void {
@@ -88,106 +190,126 @@ export class NearbyExplorer implements AfterViewInit {
     } else if (pool.length && !this.nearId()) {
       this.nearId.set(pool[0].id);
     }
-    const a = this.anchor();
-    if (a) {
-      this.customL.set(a.L);
-      this.customA.set(a.a);
-      this.customB.set(a.b);
-    }
-    setTimeout(() => this.drawPickerCanvas(), 0);
+    this.paintSV();
   }
 
-  onSelectStandard(id: string): void {
-    this.nearCustom.set(null);
-    this.nearId.set(id);
-    const a = this.anchor();
-    if (a) {
-      this.customL.set(a.L);
-      this.customA.set(a.a);
-      this.customB.set(a.b);
-    }
-  }
-
-  onValChange(val: number): void {
-    this.nearVal.set(Number(val));
-    this.drawPickerCanvas();
-  }
-
-  drawPickerCanvas(): void {
-    const cv = this.colorCanvas?.nativeElement;
+  paintSV(): void {
+    const cv = this.svCanvas?.nativeElement;
     if (!cv) return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     const w = cv.width;
     const h = cv.height;
-    const val = this.nearVal() / 100;
-    const img = ctx.createImageData(w, h);
-    for (let y = 0; y < h; y++) {
-      const sat = 1 - y / h;
-      for (let x = 0; x < w; x++) {
-        const hue = (x / w) * 360;
-        const [r, g, b] = this.hsv2rgb(hue, sat, val);
-        const idx = (y * w + x) * 4;
-        img.data[idx] = r;
-        img.data[idx + 1] = g;
-        img.data[idx + 2] = b;
-        img.data[idx + 3] = 255;
-      }
+    const [hr, hg, hb] = this.hsv2rgb(this.pickH(), 1, 1);
+
+    ctx.fillStyle = `rgb(${hr | 0},${hg | 0},${hb | 0})`;
+    ctx.fillRect(0, 0, w, h);
+
+    const gx = ctx.createLinearGradient(0, 0, w, 0);
+    gx.addColorStop(0, '#fff');
+    gx.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gx;
+    ctx.fillRect(0, 0, w, h);
+
+    const gy = ctx.createLinearGradient(0, 0, 0, h);
+    gy.addColorStop(0, 'rgba(0,0,0,0)');
+    gy.addColorStop(1, '#000');
+    ctx.fillStyle = gy;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  onSvPointerDown(ev: PointerEvent): void {
+    this.dragSV = true;
+    (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
+    this.updateSvFromPointer(ev);
+  }
+
+  onSvPointerMove(ev: PointerEvent): void {
+    if (this.dragSV) {
+      this.updateSvFromPointer(ev);
     }
-    ctx.putImageData(img, 0, 0);
   }
 
-  onCanvasMouseDown(ev: MouseEvent): void {
-    this.canvasDragging = true;
-    this.pickFromCanvas(ev);
+  onSvPointerUp(): void {
+    this.dragSV = false;
   }
 
-  onCanvasMouseMove(ev: MouseEvent): void {
-    if (this.canvasDragging) {
-      this.pickFromCanvas(ev);
+  onHuePointerDown(ev: PointerEvent): void {
+    this.dragHue = true;
+    (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
+    this.updateHueFromPointer(ev);
+  }
+
+  onHuePointerMove(ev: PointerEvent): void {
+    if (this.dragHue) {
+      this.updateHueFromPointer(ev);
     }
   }
 
-  onCanvasMouseUp(): void {
-    this.canvasDragging = false;
+  onHuePointerUp(): void {
+    this.dragHue = false;
   }
 
-  private pickFromCanvas(ev: MouseEvent): void {
-    const cv = this.colorCanvas?.nativeElement;
-    if (!cv) return;
-    const rect = cv.getBoundingClientRect();
+  private updateSvFromPointer(ev: PointerEvent): void {
+    const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
     const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
-    const hue = x * 360;
-    const sat = 1 - y;
-    const val = this.nearVal() / 100;
-    const [r, g, b] = this.hsv2rgb(hue, sat, val);
-    const hex = '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
-    const [L, a, bl] = this.rgb2lab(r, g, b);
-    this.customL.set(L);
-    this.customA.set(a);
-    this.customB.set(bl);
-    this.nearCustom.set({
-      hex,
-      L,
-      a,
-      b: bl,
-      label: `Picked ${hex}`
-    });
+    this.pickS.set(x);
+    this.pickV.set(1 - y);
+    this.syncAnchorToPicker();
   }
 
-  pickFromLab(): void {
-    const L = Number(this.customL()) || 55;
-    const a = Number(this.customA()) || 0;
-    const b = Number(this.customB()) || 0;
-    const cur = this.nearCustom();
-    this.nearCustom.set({
-      hex: cur?.hex || '#4A7C59',
-      L,
-      a,
-      b,
-      label: `Custom L*${L} a*${a} b*${b}`
-    });
+  private updateHueFromPointer(ev: PointerEvent): void {
+    const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+    this.pickH.set(x * 360);
+    this.paintSV();
+    this.syncAnchorToPicker();
+  }
+
+  private syncAnchorToPicker(): void {
+    const match = this.nearestMatch();
+    if (match) {
+      this.nearId.set(match.c.id);
+    }
+  }
+
+  onSearchChange(query: string): void {
+    this.searchQuery.set(query);
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return;
+    const match = this.api.colorPool().find((c) => c.n.toLowerCase().includes(q));
+    if (match) {
+      this.nearId.set(match.id);
+    }
+  }
+
+  searchByLab(): void {
+    const L = parseFloat(String(this.labL() ?? ''));
+    const a = parseFloat(String(this.labA() ?? ''));
+    const b = parseFloat(String(this.labB() ?? ''));
+    if ([L, a, b].some((v) => Number.isNaN(v))) {
+      this.labMsg.set({ warn: 'Enter all three values (L*, a*, b*)' });
+      return;
+    }
+    const pool = this.api.colorPool();
+    let best: { c: ColorStandard; de: number } | null = null;
+    for (const c of pool) {
+      const de = this.api.cmcDE([L, a, b], [c.L, c.a, c.b]);
+      if (!best || de < best.de) {
+        best = { c, de };
+      }
+    }
+    if (!best) {
+      this.labMsg.set({ warn: 'No match found' });
+      return;
+    }
+    this.nearId.set(best.c.id);
+    this.labMsg.set({ name: best.c.n, de: best.de });
+  }
+
+  selectAnchor(id: string): void {
+    this.nearId.set(id);
   }
 
   openColor(id: string): void {
@@ -195,23 +317,57 @@ export class NearbyExplorer implements AfterViewInit {
   }
 
   private hsv2rgb(h: number, s: number, v: number): [number, number, number] {
-    const c = v * s;
-    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = v - c;
+    const hn = h / 360;
+    const i = Math.floor(hn * 6);
+    const f = hn * 6 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
     let r = 0;
     let g = 0;
     let b = 0;
-    if (h < 60) [r, g, b] = [c, x, 0];
-    else if (h < 120) [r, g, b] = [x, c, 0];
-    else if (h < 180) [r, g, b] = [0, c, x];
-    else if (h < 240) [r, g, b] = [0, x, c];
-    else if (h < 300) [r, g, b] = [x, 0, c];
-    else [r, g, b] = [c, 0, x];
-    return [
-      Math.round((r + m) * 255),
-      Math.round((g + m) * 255),
-      Math.round((b + m) * 255)
-    ];
+    switch (i % 6) {
+      case 0:
+        r = v;
+        g = t;
+        b = p;
+        break;
+      case 1:
+        r = q;
+        g = v;
+        b = p;
+        break;
+      case 2:
+        r = p;
+        g = v;
+        b = t;
+        break;
+      case 3:
+        r = p;
+        g = q;
+        b = v;
+        break;
+      case 4:
+        r = t;
+        g = p;
+        b = v;
+        break;
+      default:
+        r = v;
+        g = p;
+        b = q;
+        break;
+    }
+    return [r * 255, g * 255, b * 255];
+  }
+
+  private rgb2hex(r: number, g: number, b: number): string {
+    return (
+      '#' +
+      [r, g, b]
+        .map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0'))
+        .join('')
+    );
   }
 
   private rgb2lab(r: number, g: number, bl: number): [number, number, number] {
@@ -229,11 +385,6 @@ export class NearbyExplorer implements AfterViewInit {
     X = h(X);
     Y = h(Y);
     Z = h(Z);
-    return [
-      +(116 * Y - 16).toFixed(1),
-      +(500 * (X - Y)).toFixed(1),
-      +(200 * (Y - Z)).toFixed(1)
-    ];
+    return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
   }
 }
-

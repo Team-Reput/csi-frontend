@@ -1,185 +1,241 @@
 <app-common-page-header
-  eyebrow="Tools"
+  eyebrow="Perceptual neighborhood"
   title="Nearby Explorer"
-  desc="Search for perceptually similar colors within a CMC &Delta;E radius using the 2D color canvas or catalog standard."
+  desc="Explore the full color field, or search by name or exact LAB values, and see every CSI standard within a live CMC(2:1) &Delta;E radius."
 />
 
-@if (anchor(); as a) {
-  <div class="grid-2" style="margin-bottom:16px">
-    <div class="card">
-      <div class="card-h">
-        <h3>2D Color Field Picker</h3>
-        <span class="hint">click or drag to sample</span>
-      </div>
-      <div style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap">
-        <div style="flex:1;min-width:240px;position:relative">
-          <canvas
-            #colorCanvas
-            width="320"
-            height="150"
-            style="width:100%;height:150px;border-radius:10px;cursor:crosshair;border:1px solid var(--border-2);display:block"
-            (mousedown)="onCanvasMouseDown($event)"
-            (mousemove)="onCanvasMouseMove($event)"
-            (mouseup)="onCanvasMouseUp()"
-            (mouseleave)="onCanvasMouseUp()"
-          ></canvas>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11.5px">
-            <span class="mono" style="color:var(--text-faint)">Lightness V:</span>
-            <input
-              type="range"
-              min="20"
-              max="100"
-              [ngModel]="nearVal()"
-              (ngModelChange)="onValChange($event)"
-              style="flex:1"
-            />
-            <b class="mono">{{ nearVal() }}%</b>
-          </div>
-        </div>
+<div class="card" style="margin-bottom:16px">
+  <div class="card-h">
+    <h3>&#9673; Color Picker</h3>
+    <span class="hint">pick any color &middot; we resolve it to the nearest CSI standard</span>
+  </div>
 
+  <div class="picker-grid">
+    <div>
+      <div
+        class="sv-wrap"
+        (pointerdown)="onSvPointerDown($event)"
+        (pointermove)="onSvPointerMove($event)"
+        (pointerup)="onSvPointerUp()"
+        (pointercancel)="onSvPointerUp()"
+      >
+        <canvas
+          #svCanvas
+          width="480"
+          height="300"
+          style="width:100%;height:100%;display:block"
+        ></canvas>
         <div
-          style="width:190px;padding:12px;background:var(--card-2);border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;justify-content:space-between"
-        >
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="sw-lg" [style.background]="a.hex" style="width:46px;height:46px"></div>
-            <div style="min-width:0">
-              <div
-                style="font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
-              >
-                {{ a.n }}
-              </div>
-              <div class="mono" style="font-size:10.5px;color:var(--text-faint)">{{ a.hex }}</div>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
-            <div>
-              <label style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono)">L*</label>
-              <input
-                class="inp"
-                style="padding:4px 6px;font-size:11px"
-                type="number"
-                step="0.5"
-                [ngModel]="customL()"
-                (ngModelChange)="customL.set($event)"
-              />
-            </div>
-            <div>
-              <label style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono)">a*</label>
-              <input
-                class="inp"
-                style="padding:4px 6px;font-size:11px"
-                type="number"
-                step="0.5"
-                [ngModel]="customA()"
-                (ngModelChange)="customA.set($event)"
-              />
-            </div>
-            <div>
-              <label style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono)">b*</label>
-              <input
-                class="inp"
-                style="padding:4px 6px;font-size:11px"
-                type="number"
-                step="0.5"
-                [ngModel]="customB()"
-                (ngModelChange)="customB.set($event)"
-              />
-            </div>
-          </div>
-          <button
-            class="btn-primary btn-xs"
-            style="margin-top:8px;width:100%;justify-content:center"
-            (click)="pickFromLab()"
-          >
-            Search L*a*b*
-          </button>
-        </div>
+          class="sv-handle"
+          [style.left.%]="pickS() * 100"
+          [style.top.%]="(1 - pickV()) * 100"
+          [style.background]="pickedColor().hex"
+        ></div>
+      </div>
+
+      <div
+        class="hue-wrap"
+        (pointerdown)="onHuePointerDown($event)"
+        (pointermove)="onHuePointerMove($event)"
+        (pointerup)="onHuePointerUp()"
+        (pointercancel)="onHuePointerUp()"
+      >
+        <div
+          class="hue-handle"
+          [style.left.%]="(pickH() / 360) * 100"
+          [style.background]="pickedColor().hueHex"
+        ></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-h">
-        <h3>Catalog Standard Anchor</h3>
-        @if (nearCustom()) {
-          <button class="btn-ghost btn-xs" (click)="nearCustom.set(null)">Reset to catalog</button>
-        }
+    <div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div
+          [style.background]="pickedColor().hex"
+          style="width:64px;height:64px;border-radius:14px;border:1px solid var(--border-2);box-shadow:var(--sh-sm);flex-shrink:0"
+        ></div>
+        <div style="flex:1">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-faint)">
+            {{ pickedColor().hex }}
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-soft);margin-top:3px">
+            L {{ pickedColor().lab[0].toFixed(1) }} &middot; a {{ pickedColor().lab[1].toFixed(1) }}
+            &middot; b {{ pickedColor().lab[2].toFixed(1) }}
+          </div>
+        </div>
       </div>
-      <select
-        class="hdr-sel"
-        style="width:100%;margin-bottom:12px"
-        [ngModel]="nearId()"
-        (ngModelChange)="onSelectStandard($event)"
-      >
-        @for (c of api.colorPool().slice(0, 220); track c.id) {
-          <option [value]="c.id">{{ c.n }} ({{ c.id }}) &middot; {{ c.fam }}</option>
-        }
-      </select>
 
       <div
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card-2);border-radius:8px;margin-bottom:12px;border:1px solid var(--border)"
+        style="font-family:var(--mono);font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px"
       >
-        <span style="font-size:12px;color:var(--text-soft)">CMC &Delta;E Radius:</span>
-        <input
-          type="range"
-          min="2"
-          max="30"
-          step="1"
-          [ngModel]="nearRad()"
-          (ngModelChange)="nearRad.set(+$event)"
-          style="flex:1"
-        />
-        <b class="mono" style="font-size:14px">&le; {{ nearRad() }}</b>
+        Nearest CSI standard
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-soft)">
-        <span>
-          Anchor: <b>{{ a.n }}</b>
-          <span class="mono">(L*{{ a.L }} a*{{ a.a }} b*{{ a.b }})</span>
-        </span>
-        <span class="badge b-Breakout">
-          <b>{{ neighbors().length }}</b> matches
-        </span>
+      @if (nearestMatch(); as best) {
+        <div
+          style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card-2);cursor:pointer"
+          (click)="openColor(best.c.id)"
+        >
+          <div
+            [style.background]="best.c.hex"
+            style="width:46px;height:46px;border-radius:11px;border:1px solid var(--border-2);flex-shrink:0"
+          ></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13.5px">{{ best.c.n }}</div>
+            <div style="font-size:10.5px;color:var(--text-faint);font-family:var(--mono)">
+              {{ best.c.id }}
+            </div>
+            <div style="margin-top:4px">
+              <span class="badge" [ngClass]="'b-' + best.c.q">{{ best.c.q }}</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div
+              style="font-family:var(--mono);font-weight:700;font-size:15px"
+              [style.color]="
+                best.de <= 3 ? 'var(--success)' : best.de <= 6 ? 'var(--warn)' : 'var(--text-soft)'
+              "
+            >
+              &Delta;E {{ best.de.toFixed(2) }}
+            </div>
+            <div style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono)">
+              {{ best.de <= 3 ? 'exact match' : best.de <= 6 ? 'close' : 'nearest' }}
+            </div>
+          </div>
+        </div>
+      }
+
+      <div style="font-size:11px;color:var(--text-soft);margin-top:12px;line-height:1.5">
+        Drag the square to change saturation and brightness, the bar for hue. The nearest standard
+        and its neighbors update live.
       </div>
     </div>
   </div>
+</div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
-    @for (c of neighbors(); track c.id) {
-      <div
-        class="card"
-        style="cursor:pointer;margin-bottom:0"
-        (click)="openColor(c.id)"
+@if (anchor(); as a) {
+  <div class="grid-2 nearby-bottom-grid">
+    <div class="card">
+      <div class="card-h"><h3>Anchor</h3></div>
+
+      <label
+        style="font-family:var(--mono);font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em"
       >
-        <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
-          <div class="sw-lg" [style.background]="c.hex" style="width:42px;height:42px"></div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              {{ c.n }}
-            </div>
-            <div class="mono" style="font-size:10.5px;color:var(--text-faint)">
-              {{ c.id }} &middot; {{ c.fam }}
+        Search by name
+      </label>
+      <input
+        placeholder="Search a color&hellip;"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchChange($event)"
+        style="width:100%;margin-top:6px;background:var(--card);border:1px solid var(--border-2);color:var(--text);padding:10px 12px;border-radius:9px"
+      />
+
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <label
+          style="font-family:var(--mono);font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em"
+        >
+          Or search by LAB values
+        </label>
+        <div style="display:flex;gap:7px;margin-top:6px">
+          <input
+            type="number"
+            placeholder="L*"
+            step="0.1"
+            [ngModel]="labL()"
+            (ngModelChange)="labL.set($event)"
+            style="width:33%;background:var(--card);border:1px solid var(--border-2);color:var(--text);padding:9px 10px;border-radius:9px;font-family:var(--mono);font-size:12.5px"
+          />
+          <input
+            type="number"
+            placeholder="a*"
+            step="0.1"
+            [ngModel]="labA()"
+            (ngModelChange)="labA.set($event)"
+            style="width:33%;background:var(--card);border:1px solid var(--border-2);color:var(--text);padding:9px 10px;border-radius:9px;font-family:var(--mono);font-size:12.5px"
+          />
+          <input
+            type="number"
+            placeholder="b*"
+            step="0.1"
+            [ngModel]="labB()"
+            (ngModelChange)="labB.set($event)"
+            style="width:33%;background:var(--card);border:1px solid var(--border-2);color:var(--text);padding:9px 10px;border-radius:9px;font-family:var(--mono);font-size:12.5px"
+          />
+        </div>
+        <button
+          class="btn-primary"
+          style="width:100%;margin-top:9px;justify-content:center"
+          (click)="searchByLab()"
+        >
+          &#8981; Find nearest standard
+        </button>
+        @if (labMsg(); as msg) {
+          <div style="font-size:11.5px;color:var(--text-soft);margin-top:8px">
+            @if (msg.warn) {
+              <span style="color:var(--warn)">{{ msg.warn }}</span>
+            } @else if (msg.name && msg.de != null) {
+              Nearest standard: <b>{{ msg.name }}</b> at &Delta;E {{ msg.de.toFixed(2) }}
+            }
+          </div>
+        }
+      </div>
+
+      <div style="margin-top:14px">
+        <div
+          style="display:flex;align-items:center;gap:12px;padding:11px;background:var(--card-2);border:1px solid var(--border);border-radius:11px"
+        >
+          <div class="sw-lg" [style.background]="a.hex"></div>
+          <div>
+            <div style="font-weight:700">{{ a.n }}</div>
+            <div style="font-size:11px;color:var(--text-faint);font-family:var(--mono)">
+              L {{ a.L }} &middot; a {{ a.a }} &middot; b {{ a.b }}
             </div>
           </div>
-          <span
-            class="badge"
-            [ngClass]="c.de < 2 ? 'b-Breakout' : c.de < 5 ? 'b-Emerging' : 'b-Core'"
-          >
-            &Delta;E {{ c.de.toFixed(1) }}
-          </span>
-        </div>
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-soft);padding-top:8px;border-top:1px solid var(--border)"
-        >
-          <span>Stage: <b>{{ c.q }}</b></span>
-          <span class="mono">E {{ c.e }} &middot; T {{ c.t }}</span>
-          <button
-            class="btn-ghost btn-xs"
-            (click)="$event.stopPropagation(); toast.addToPalette(c.id)"
-          >
-            + Palette
-          </button>
         </div>
       </div>
-    }
+
+      <div style="margin-top:16px">
+        <label style="font-size:12px;color:var(--text-soft)">
+          &Delta;E radius: <b>{{ nearRad().toFixed(1) }}</b>
+        </label>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          step="0.5"
+          [ngModel]="nearRad()"
+          (ngModelChange)="nearRad.set(+$event)"
+          style="width:100%;margin-top:6px"
+        />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>{{ neighbors().length }} within &Delta;E {{ nearRad().toFixed(1) }}</h3>
+        <span class="hint">CMC(2:1) distance</span>
+      </div>
+
+      <div class="nb-grid">
+        @for (c of neighbors(); track c.id) {
+          <div class="nb-tile" (click)="selectAnchor(c.id)">
+            <div
+              [style.background]="c.hex"
+              style="height:52px;border-radius:8px;margin-bottom:7px"
+            ></div>
+            <div
+              style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+            >
+              {{ c.n }}
+            </div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-faint)">
+              &Delta;E {{ c.de.toFixed(1) }}
+            </div>
+          </div>
+        } @empty {
+          <div class="empty" style="grid-column:1/-1">Widen the radius</div>
+        }
+      </div>
+    </div>
   </div>
 }
