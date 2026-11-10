@@ -1,0 +1,116 @@
+@if (api.db(); as db) {
+  <app-common-page-header
+    eyebrow="Network intelligence"
+    title="Command Center"
+    desc="Color demand across {{ api.fmt(db.meta.demandRows) }} production orders, {{ db.meta.monthRange }}."
+  >
+    <button class="btn-ghost" (click)="goTo('/csi/intelligence/color-space-3d')">
+      ◉ 3D Color Space
+    </button>
+  </app-common-page-header>
+
+  <app-common-kpi-row [items]="kpis()" />
+
+  <app-market-momentum-card />
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-h">
+      <h3 style="color:var(--q-emerging)">⚡ Breakout Watchlist</h3>
+      <span class="hint">P(breakout &le; 12mo) &middot; ranked shortlist</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
+      @for (d of breakoutShortlist(); track d.dir_id) {
+        <div
+          class="list-row"
+          style="border:1px solid var(--border);border-radius:12px;padding:12px;margin:0"
+          (click)="openDir('emerging', d.dir_id)"
+        >
+          <div class="sw-stack">
+            @for (m of d.members.slice(0, 3); track m.id) {
+              <div [style.background]="m.hex"></div>
+            }
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">{{ d.leader }}</div>
+            <div style="font-size:11px;color:var(--text-faint)">
+              {{ d.family }} &middot; {{ api.fmt(d.recentVol) }} units
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div
+              style="font-weight:800;font-size:16px"
+              [style.color]="(d.prob || 0) >= 0.7 ? 'var(--q-breakout)' : 'var(--q-emerging)'"
+            >
+              {{ Math.round((d.prob || (d.breakoutProb ? d.breakoutProb / 100 : 0.5)) * 100) }}%
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+    <button
+      class="btn-ghost"
+      style="width:100%;margin-top:14px;justify-content:center"
+      (click)="goTo('/csi/intelligence/predictions')"
+    >
+      View all predictions &rarr;
+    </button>
+  </div>
+
+  <div class="grid-2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-h">
+        <h3 style="color:var(--q-emerging)">&nearr; Top Emerging Directions</h3>
+      </div>
+      @for (d of topEmerging(); track d.dir_id) {
+        <div class="list-row" (click)="openDir('emerging', d.dir_id)">
+          <div class="sw-stack">
+            @for (m of d.members.slice(0, 4); track m.id) {
+              <div [style.background]="m.hex"></div>
+            }
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">
+              {{ d.leader }}
+              <span style="font-weight:400;color:var(--text-faint)">+{{ d.size - 1 }}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-faint)">
+              {{ d.family }} &middot; {{ api.fmt(d.vol) }} units
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:800;font-size:14px;color:var(--q-emerging)">{{ d.avg }}</div>
+            <div style="font-size:9px;color:var(--text-faint);font-family:var(--mono)">EMERGENCE</div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3 style="color:var(--q-breakout)">&diams; Top Trending Directions</h3>
+      </div>
+      @for (d of topTrending(); track d.dir_id) {
+        <div class="list-row" (click)="openDir('trending', d.dir_id)">
+          <div class="sw-stack">
+            @for (m of d.members.slice(0, 4); track m.id) {
+              <div [style.background]="m.hex"></div>
+            }
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">
+              {{ d.leader }}
+              <span style="font-weight:400;color:var(--text-faint)">+{{ d.size - 1 }}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-faint)">
+              {{ d.family }} &middot; {{ api.fmt(d.vol) }} units
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:800;font-size:14px;color:var(--q-breakout)">{{ d.avg }}</div>
+            <div style="font-size:9px;color:var(--text-faint);font-family:var(--mono)">TREND</div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

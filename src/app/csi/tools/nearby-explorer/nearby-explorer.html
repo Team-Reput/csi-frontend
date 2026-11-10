@@ -1,0 +1,185 @@
+<app-common-page-header
+  eyebrow="Tools"
+  title="Nearby Explorer"
+  desc="Search for perceptually similar colors within a CMC &Delta;E radius using the 2D color canvas or catalog standard."
+/>
+
+@if (anchor(); as a) {
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-h">
+        <h3>2D Color Field Picker</h3>
+        <span class="hint">click or drag to sample</span>
+      </div>
+      <div style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px;position:relative">
+          <canvas
+            #colorCanvas
+            width="320"
+            height="150"
+            style="width:100%;height:150px;border-radius:10px;cursor:crosshair;border:1px solid var(--border-2);display:block"
+            (mousedown)="onCanvasMouseDown($event)"
+            (mousemove)="onCanvasMouseMove($event)"
+            (mouseup)="onCanvasMouseUp()"
+            (mouseleave)="onCanvasMouseUp()"
+          ></canvas>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11.5px">
+            <span class="mono" style="color:var(--text-faint)">Lightness V:</span>
+            <input
+              type="range"
+              min="20"
+              max="100"
+              [ngModel]="nearVal()"
+              (ngModelChange)="onValChange($event)"
+              style="flex:1"
+            />
+            <b class="mono">{{ nearVal() }}%</b>
+          </div>
+        </div>
+
+        <div
+          style="width:190px;padding:12px;background:var(--card-2);border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;justify-content:space-between"
+        >
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="sw-lg" [style.background]="a.hex" style="width:46px;height:46px"></div>
+            <div style="min-width:0">
+              <div
+                style="font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+              >
+                {{ a.n }}
+              </div>
+              <div class="mono" style="font-size:10.5px;color:var(--text-faint)">{{ a.hex }}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
+            <div>
+              <label style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono)">L*</label>
+              <input
+                class="inp"
+                style="padding:4px 6px;font-size:11px"
+                type="number"
+                step="0.5"
+                [ngModel]="customL()"
+                (ngModelChange)="customL.set($event)"
+              />
+            </div>
+            <div>
+              <label style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono)">a*</label>
+              <input
+                class="inp"
+                style="padding:4px 6px;font-size:11px"
+                type="number"
+                step="0.5"
+                [ngModel]="customA()"
+                (ngModelChange)="customA.set($event)"
+              />
+            </div>
+            <div>
+              <label style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono)">b*</label>
+              <input
+                class="inp"
+                style="padding:4px 6px;font-size:11px"
+                type="number"
+                step="0.5"
+                [ngModel]="customB()"
+                (ngModelChange)="customB.set($event)"
+              />
+            </div>
+          </div>
+          <button
+            class="btn-primary btn-xs"
+            style="margin-top:8px;width:100%;justify-content:center"
+            (click)="pickFromLab()"
+          >
+            Search L*a*b*
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>Catalog Standard Anchor</h3>
+        @if (nearCustom()) {
+          <button class="btn-ghost btn-xs" (click)="nearCustom.set(null)">Reset to catalog</button>
+        }
+      </div>
+      <select
+        class="hdr-sel"
+        style="width:100%;margin-bottom:12px"
+        [ngModel]="nearId()"
+        (ngModelChange)="onSelectStandard($event)"
+      >
+        @for (c of api.colorPool().slice(0, 220); track c.id) {
+          <option [value]="c.id">{{ c.n }} ({{ c.id }}) &middot; {{ c.fam }}</option>
+        }
+      </select>
+
+      <div
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card-2);border-radius:8px;margin-bottom:12px;border:1px solid var(--border)"
+      >
+        <span style="font-size:12px;color:var(--text-soft)">CMC &Delta;E Radius:</span>
+        <input
+          type="range"
+          min="2"
+          max="30"
+          step="1"
+          [ngModel]="nearRad()"
+          (ngModelChange)="nearRad.set(+$event)"
+          style="flex:1"
+        />
+        <b class="mono" style="font-size:14px">&le; {{ nearRad() }}</b>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-soft)">
+        <span>
+          Anchor: <b>{{ a.n }}</b>
+          <span class="mono">(L*{{ a.L }} a*{{ a.a }} b*{{ a.b }})</span>
+        </span>
+        <span class="badge b-Breakout">
+          <b>{{ neighbors().length }}</b> matches
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+    @for (c of neighbors(); track c.id) {
+      <div
+        class="card"
+        style="cursor:pointer;margin-bottom:0"
+        (click)="openColor(c.id)"
+      >
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+          <div class="sw-lg" [style.background]="c.hex" style="width:42px;height:42px"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ c.n }}
+            </div>
+            <div class="mono" style="font-size:10.5px;color:var(--text-faint)">
+              {{ c.id }} &middot; {{ c.fam }}
+            </div>
+          </div>
+          <span
+            class="badge"
+            [ngClass]="c.de < 2 ? 'b-Breakout' : c.de < 5 ? 'b-Emerging' : 'b-Core'"
+          >
+            &Delta;E {{ c.de.toFixed(1) }}
+          </span>
+        </div>
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-soft);padding-top:8px;border-top:1px solid var(--border)"
+        >
+          <span>Stage: <b>{{ c.q }}</b></span>
+          <span class="mono">E {{ c.e }} &middot; T {{ c.t }}</span>
+          <button
+            class="btn-ghost btn-xs"
+            (click)="$event.stopPropagation(); toast.addToPalette(c.id)"
+          >
+            + Palette
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}

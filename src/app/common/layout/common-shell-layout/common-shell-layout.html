@@ -1,0 +1,28 @@
+<div id="app">
+  <app-sidebar />
+  <div class="main">
+    <app-topbar />
+    <main class="content" id="content">
+      @if (api.loading()) {
+        <div class="page">
+          <div class="card" style="padding:36px;text-align:center;color:var(--text-soft)">
+            Loading CSI Color Intelligence dataset (1,288 standards · 772,499 orders)…
+          </div>
+        </div>
+      } @else {
+        <div class="page" id="page">
+          <router-outlet />
+        </div>
+      }
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast" [class.show]="toast.toastState().visible">
+  <div class="ic" id="toastIc">{{ toast.toastState().ic }}</div>
+  <div>
+    <b id="toastTitle">{{ toast.toastState().title }}</b>
+    <span id="toastDesc">{{ toast.toastState().desc }}</span>
+  </div>
+</div>
+

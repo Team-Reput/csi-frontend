@@ -1,0 +1,61 @@
+@if (activeSlice(); as s) {
+  <div style="margin-bottom:14px">
+    <button class="btn-ghost" (click)="backToPortfolio()">&larr; Back to portfolio</button>
+  </div>
+
+  <div class="hero" style="margin-bottom:18px">
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-3)">
+      Brand Portal &middot; {{ portalBrand() }}
+    </div>
+    <div style="font-size:24px;font-weight:700;margin-top:6px">{{ brandName() }}</div>
+    <div style="font-size:13px;color:rgba(233,237,242,.75);margin-top:4px">
+      Dedicated view of {{ brandName() }}'s order history, active palette, and alignment with emerging CSI network directions.
+    </div>
+  </div>
+
+  <app-common-kpi-row [items]="kpis()" />
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-h">
+        <h3>Top Colors Ordered</h3>
+        <span class="hint">{{ s.topColors ? s.topColors.length : 0 }} displayed</span>
+      </div>
+      @for (c of s.topColors ? s.topColors.slice(0, 8) : []; track c.name) {
+        <div class="list-row">
+          <div class="sw" [style.background]="c.hex"></div>
+          <div style="flex:1">
+            <div style="font-weight:600">{{ c.name }}</div>
+            <div style="font-size:11px;color:var(--text-faint)">{{ c.hex }}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700">
+            {{ api.fmt(c.vol) }} units
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3 style="color:var(--q-emerging)">Emerging in Your Palette</h3>
+        <span class="hint">accelerating market-wide</span>
+      </div>
+      @if (s.emergingColors && s.emergingColors.length) {
+        @for (c of s.emergingColors; track c.name) {
+          <div class="list-row" (click)="openColor(c.InvID || c.id)">
+            <div class="sw" [style.background]="c.hex"></div>
+            <div style="flex:1">
+              <div style="font-weight:600">{{ c.name }}</div>
+              <div style="font-size:11px;color:var(--text-faint)">
+                {{ c.family }} &middot; {{ c.InvID || c.id }}
+              </div>
+            </div>
+            <span class="badge b-Emerging">{{ c.momentum || 'Emerging' }}</span>
+          </div>
+        }
+      } @else {
+        <div class="empty">No emerging colors flagged yet</div>
+      }
+    </div>
+  </div>
+}

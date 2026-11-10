@@ -1,0 +1,61 @@
+<app-stepper-header [activeStep]="3" />
+
+<app-common-page-header
+  eyebrow="Step 3 of 3"
+  title="Data Validation"
+  desc="Every check the pipeline runs before the data is allowed into the intelligence layer. Nothing is scored on data that fails."
+  [showExport]="false"
+/>
+
+<app-common-kpi-row [items]="kpis()" />
+
+<div class="card pad0">
+  <div style="padding:16px 20px 4px">
+    <h3 style="font-size:14px;font-weight:700">Validation checks</h3>
+    <span class="hint" style="font-family:var(--mono);font-size:11px;color:var(--text-faint)">
+      run on every ingest
+    </span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Check</th>
+        <th>Result</th>
+        <th>Detail</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of checks; track c[0]) {
+        <tr>
+          <td style="font-weight:600">{{ c[0] }}</td>
+          <td style="font-family:var(--mono);font-size:12px">{{ c[3] }}</td>
+          <td style="color:var(--text-soft);font-size:12.5px">{{ c[1] }}</td>
+          <td>
+            <span class="badge" [ngClass]="c[2] === 'pass' ? 'b-Breakout' : 'b-Emerging'">
+              {{ c[2] === 'pass' ? 'pass' : 'cleaned' }}
+            </span>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<div class="note" style="margin-top:16px">
+  <span>✓</span>
+  <span>
+    Data integrity is the platform's core principle: no fabricated values, and every score traces back to validated orders. Rows that fail a hard check are excluded rather than estimated.
+  </span>
+</div>
+
+<div style="display:flex;gap:9px;margin-top:18px">
+  <button class="btn-ghost" (click)="goBackPreprocess()">&larr; Back</button>
+  <button
+    class="btn-leaf"
+    style="flex:1;justify-content:center"
+    (click)="enterPlatform()"
+  >
+    Enter platform &rarr;
+  </button>
+</div>

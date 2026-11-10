@@ -1,0 +1,55 @@
+<app-common-page-header
+  eyebrow="Supply-Chain Actionability &middot; Dye-House Operations"
+  title="Inventory Intelligence &mdash; Reorder, Dead Stock &amp; AI Plan"
+  desc="Translates 12-month demand forecasts directly into dye-lot reorder quantities, dead-stock liquidation alerts, and direction-level capacity plans."
+/>
+
+<app-common-kpi-row [items]="kpis()" />
+
+<div class="tabs">
+  <button
+    class="tab"
+    [class.on]="invTab() === 'reorder'"
+    (click)="invTab.set('reorder')"
+  >
+    &bull; Reorder Alerts ({{ api.db()?.inventoryOps?.reorder?.length || 0 }})
+  </button>
+  <button
+    class="tab"
+    [class.on]="invTab() === 'dead'"
+    (click)="invTab.set('dead')"
+  >
+    &#x25D0; Dead Stock ({{ api.db()?.inventoryOps?.deadStock?.length || 0 }})
+  </button>
+  <button
+    class="tab"
+    [class.on]="invTab() === 'plan'"
+    (click)="invTab.set('plan')"
+  >
+    &plusmn; AI Direction Plan ({{ api.db()?.inventoryPlan?.length || 0 }})
+  </button>
+  <button
+    class="tab"
+    [class.on]="invTab() === 'family'"
+    (click)="invTab.set('family')"
+  >
+    &#x25A6; By Color Family (13)
+  </button>
+</div>
+
+<div id="invBody">
+  @switch (invTab()) {
+    @case ('reorder') {
+      <app-inventory-reorder />
+    }
+    @case ('dead') {
+      <app-inventory-dead-stock />
+    }
+    @case ('plan') {
+      <app-inventory-ai-plan />
+    }
+    @case ('family') {
+      <app-inventory-by-family />
+    }
+  }
+</div>

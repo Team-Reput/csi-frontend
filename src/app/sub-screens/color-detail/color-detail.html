@@ -1,0 +1,137 @@
+@if (color(); as c) {
+  <div style="margin-bottom:12px">
+    <button class="btn-ghost" (click)="goBack()">&larr; Back</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <div
+        [style.background]="c.hex"
+        style="width:100px;height:100px;border-radius:14px;border:1px solid rgba(0,0,0,.15);box-shadow:var(--sh-md);flex-shrink:0"
+      ></div>
+      <div style="flex:1;min-width:240px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span class="badge" [ngClass]="'b-' + c.q">{{ c.q }}</span>
+          <span class="pill">{{ c.fam }}</span>
+          <span class="pill">{{ c.ty || 'Solid' }} &middot; {{ c.sub || 'Cotton' }}</span>
+          @if (c.phase) {
+            <span class="badge b-Core">Phase: {{ c.phase }}</span>
+          }
+          <span class="mono" style="font-size:11.5px;color:var(--text-faint)">
+            {{ c.id }} &middot; {{ c.hex }}
+          </span>
+        </div>
+        <h2 style="font-size:24px;font-weight:800;letter-spacing:-.02em">{{ c.n }}</h2>
+        <div
+          style="display:flex;gap:18px;margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--text-soft);flex-wrap:wrap"
+        >
+          <span>L* <b>{{ c.L }}</b></span>
+          <span>a* <b>{{ c.a }}</b></span>
+          <span>b* <b>{{ c.b }}</b></span>
+          <span>Volume <b>{{ api.fmt(c.vol) }}</b></span>
+          <span>Active Brands <b>{{ c.brandCount || c.brands || 6 }}</b></span>
+          <span>YoY Momentum <b>{{ c.mom || '—' }}</b></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:center">
+        <div style="text-align:center;padding:10px 14px;border-radius:10px;background:var(--card-2);border:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--q-emerging)">
+            {{ c.e }}
+          </div>
+          <div style="font-size:10px;color:var(--text-faint);font-family:var(--mono)">EMERGENCE</div>
+        </div>
+        <div style="text-align:center;padding:10px 14px;border-radius:10px;background:var(--card-2);border:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--q-breakout)">
+            {{ c.t }}
+          </div>
+          <div style="font-size:10px;color:var(--text-faint);font-family:var(--mono)">TREND</div>
+        </div>
+        <button class="btn-leaf btn-sm" (click)="toast.addToPalette(c.id)">
+          + Palette
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-h">
+        <h3>Demand history &amp; +4Q AI Forecast</h3>
+        <span class="badge b-Breakout">
+          {{ (c.slope || 0) >= 0 ? '+' : '' }}{{ c.slope || 14 }}% slope
+        </span>
+      </div>
+      <app-forecast-detail-card
+        [history]="c.spk || []"
+        [forecast]="c.fc || []"
+        [lo]="c.fcLo || []"
+        [hi]="c.fcHi || []"
+        [color]="qcColor(c.q)"
+        [height]="210"
+      />
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>Where it's being adopted</h3>
+        <span class="hint">top brands driving demand</span>
+      </div>
+      @if (c.topBrands && c.topBrands.length) {
+        @for (b of c.topBrands; track b.name) {
+          <div style="margin-bottom:11px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <b>{{ b.name }}</b>
+              <span class="mono" style="font-size:11px;color:var(--text-soft)">
+                {{ api.fmt(b.vol) }} units &middot; <b>{{ b.share }}%</b>
+              </span>
+            </div>
+            <div class="pbar">
+              <span [style.width.%]="b.share * 2"></span>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="empty">Limited historical brand records</div>
+      }
+      @if (c.dir; as dir) {
+        <div
+          class="note"
+          style="margin-top:14px;cursor:pointer"
+          (click)="openDirection(dir.lens, dir.dir_id)"
+        >
+          <span>&#x22b9;</span>
+          <span>
+            Member of <b>{{ dir.lens.toUpperCase() }} DIRECTION: {{ dir.leader }}</b> &middot; P(breakout) <b>{{ dir.prob }}%</b> &rarr;
+          </span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <h3>Perceptually similar</h3>
+      <span class="hint">within CMC &Delta;E 6</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+      @for (n of neighbors(); track n.id) {
+        <div
+          class="list-row"
+          style="padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card-2);margin:0"
+          (click)="openColor(n.id)"
+        >
+          <span class="sw-sm" [style.background]="n.hex"></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:12.5px">{{ n.n }}</div>
+            <div class="mono" style="font-size:10.5px;color:var(--text-faint)">
+              &Delta;E {{ n.de.toFixed(2) }} &middot; {{ n.q }}
+            </div>
+          </div>
+          <span class="mono" style="font-size:11px;font-weight:700;color:var(--q-emerging)">
+            E{{ n.e }}
+          </span>
+        </div>
+      }
+    </div>
+  </div>
+}

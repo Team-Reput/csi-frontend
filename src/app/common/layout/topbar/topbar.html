@@ -1,0 +1,59 @@
+<header class="topbar">
+  <div class="crumb">
+    <span id="crumbSection">{{ crumbSection() }}</span>
+    <span class="sep">/</span>
+    <b id="crumbPage">{{ crumbPage() }}</b>
+  </div>
+
+  <div class="top-search-wrap">
+    <span class="search-ic">&#x2315;</span>
+    <input id="globalSearch" placeholder="Search colors, directions…" [ngModel]="searchQuery()"
+      (ngModelChange)="onSearchInput($event)" />
+    @if (searchOpen()) {
+    <div id="searchResults" class="show">
+      @if (matchedDirections().length) {
+      <div class="sr-label">Directions</div>
+      @for (d of matchedDirections(); track d.leader + d.lens) {
+      <div class="sr-item" (click)="selectDirection(d.lens, d.dir_id)">
+        <span class="sw-sm" [style.background]="d.members[0].hex"></span>
+        <div style="flex:1;min-width:0">
+          <b style="font-size:12px">{{ d.leader }}</b>
+          <div style="font-size:10.5px;color:var(--text-faint)">
+            {{ d.lens }} &middot; {{ d.size }} shades &middot; {{ d.family }}
+          </div>
+        </div>
+        <span class="mono" style="font-size:11px;font-weight:700">{{ d.avg }}</span>
+      </div>
+      }
+      }
+      @if (matchedColors().length) {
+      <div class="sr-label">Color standards</div>
+      @for (c of matchedColors(); track c.id) {
+      <div class="sr-item" (click)="selectColor(c.id)">
+        <span class="sw-sm" [style.background]="c.hex"></span>
+        <div style="flex:1;min-width:0">
+          <b style="font-size:12px">{{ c.n }}</b>
+          <div style="font-size:10.5px;color:var(--text-faint)">
+            {{ c.id }} &middot; {{ c.fam }} &middot; {{ c.hex }}
+          </div>
+        </div>
+        <span class="badge" [ngClass]="'b-' + c.q">{{ c.q }}</span>
+      </div>
+      }
+      }
+      @if (!matchedDirections().length && !matchedColors().length) {
+      <div style="padding:14px;color:var(--text-faint);font-size:12px">
+        No matches for "{{ searchQuery() }}"
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+
+  <span class="lineage">
+    <span class="dotlive"></span>Jan 2006 &ndash; Sep 2026
+  </span>
+  <span class="viewing-as">Viewing as <b>{{ auth.viewingAsLabel() }}</b></span>
+
+</header>

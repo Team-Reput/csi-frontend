@@ -1,0 +1,79 @@
+<app-common-page-header
+  eyebrow="Perceptual clusters &middot; &Delta;E &lt; 14 in LAB"
+  title="Trend Directions"
+  desc="Instead of tracking isolated SKUs, CSI groups perceptually close colors into directions. A direction captures the cluster in motion."
+>
+  <button
+    class="btn-ghost"
+    [class.on]="dirLens() === 'emerging'"
+    (click)="dirLens.set('emerging')"
+  >
+    &nearr; Emerging ({{ api.db()?.emergingDirections?.length || 24 }})
+  </button>
+  <button
+    class="btn-ghost"
+    [class.on]="dirLens() === 'trending'"
+    (click)="dirLens.set('trending')"
+  >
+    &diams; Trending ({{ api.db()?.trendingDirections?.length || 24 }})
+  </button>
+</app-common-page-header>
+
+<div class="filters">
+  <select
+    class="hdr-sel"
+    [ngModel]="dirFam()"
+    (ngModelChange)="dirFam.set($event)"
+  >
+    <option value="ALL">All color families</option>
+    @for (f of families(); track f.family) {
+      <option [value]="f.family">{{ f.family }} ({{ f.colors }})</option>
+    }
+  </select>
+  <span
+    class="hint"
+    style="font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-left:auto"
+  >
+    {{ filteredDirections().length }} directions &middot; click any direction for forecast &amp; member shades
+  </span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px">
+  @for (d of filteredDirections(); track d.dir_id) {
+    <div
+      class="card"
+      style="cursor:pointer;transition:.14s;margin-bottom:0"
+      (click)="openDir(d.dir_id)"
+    >
+      <div class="sw-stack" style="margin-bottom:12px">
+        @for (m of d.members.slice(0, 6); track m.id) {
+          <div [style.background]="m.hex" style="width:38px;height:38px;border-radius:8px"></div>
+        }
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-weight:700;font-size:14px">{{ d.leader }}</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:2px">
+            {{ d.size }} colors &middot; {{ d.family }} &middot; {{ api.fmt(d.vol) }} units
+          </div>
+        </div>
+        <span
+          style="font-weight:800;font-size:18px"
+          [style.color]="dirLens() === 'emerging' ? 'var(--q-emerging)' : 'var(--q-breakout)'"
+        >
+          {{ d.avg }}
+        </span>
+      </div>
+      <div
+        style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11.5px"
+      >
+        <span style="color:var(--text-soft)">P(breakout &le; 12mo)</span>
+        <b
+          [style.color]="(d.breakoutProb || 0) >= 70 ? 'var(--q-breakout)' : 'var(--q-emerging)'"
+        >
+          {{ d.breakoutProb }}% &rarr;
+        </b>
+      </div>
+    </div>
+  }
+</div>

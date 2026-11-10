@@ -1,0 +1,44 @@
+<aside class="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo">
+      <span class="dot">C</span>CSI Color Intelligence
+      <small>Powered by Reput.ai</small>
+    </div>
+  </div>
+  <nav class="sb-nav" id="sbNav">
+    @for (group of auth.activeNavGroups(); track group.label) {
+      <div class="sb-group">
+        <div class="sb-group-label">{{ group.label }}</div>
+        @for (item of group.items; track item.id) {
+          <a
+            class="nav-item"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+          >
+            <span class="ic">{{ item.ic }}</span>
+            <span style="flex:1">{{ item.t }}</span>
+            @if (item.badge) {
+              <span class="nav-badge" [ngClass]="badgeClass(item.badge)">{{ item.badge }}</span>
+            }
+          </a>
+        }
+      </div>
+    }
+  </nav>
+  <div class="sb-foot">
+    <div class="user-chip">
+      <div class="avatar" id="uAvatar">{{ auth.userAvatar() }}</div>
+      <div style="min-width:0;flex:1">
+        <div class="nm" id="uName">{{ auth.userName() }}</div>
+        <div class="rl" id="uRole">{{ auth.userRoleLabel() }}</div>
+      </div>
+      <button
+        (click)="auth.logout()"
+        title="Sign out"
+        style="color:rgba(234,245,238,.5);font-size:15px;padding:6px;cursor:pointer"
+      >
+        &#x23FB;
+      </button>
+    </div>
+  </div>
+</aside>

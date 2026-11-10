@@ -1,0 +1,76 @@
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-left">
+      <div class="login-logo"><span class="dot">C</span>CSI Color Intelligence</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(233,237,242,.5);margin-top:8px">
+        Color Demand Intelligence Platform
+      </div>
+      <div style="font-size:24px;font-weight:700;line-height:1.34;margin-top:34px;letter-spacing:-.02em">
+        Color trend intelligence, read from committed demand.
+      </div>
+      <div style="font-size:13px;color:rgba(233,237,242,.68);margin-top:12px;line-height:1.6">
+        Built on 4.3M production orders across 48,491 color standards from 1,672 brands, Jan 2006 to Sep 2026. Brands order standards 6 to 12 months before retail, so demand is visible here before it reaches stores.
+      </div>
+      <div style="display:flex;gap:30px;margin-top:34px">
+        <div>
+          <div style="font-size:22px;font-weight:700">48.5k</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(233,237,242,.55);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">
+            Colors scored
+          </div>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:700">315</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(233,237,242,.55);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">
+            Directions
+          </div>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:700">21 yr</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(233,237,242,.55);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">
+            Order history
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:38px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(233,237,242,.4)">
+        Powered by Reput.ai
+      </div>
+    </div>
+
+    <div class="login-right">
+      <div style="font-size:19px;font-weight:800;color:#fff">Sign in</div>
+      <div style="font-size:12.5px;color:rgba(234,245,238,.6);margin-top:5px;margin-bottom:22px">
+        Choose an account to continue
+      </div>
+
+      <button class="role-card" (click)="auth.doLogin('csi')">
+        <div class="rc-ic" style="background:var(--grad-leaf);color:#fff">CS</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">CSI Analyst</div>
+          <div style="font-size:11.5px;color:rgba(234,245,238,.62)">Full network intelligence · all brands</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(234,245,238,.45);margin-top:3px">
+            csi.analyst&#64;reput.ai · TempCSI#2026
+          </div>
+        </div>
+        <span style="color:var(--accent-3);font-size:18px">&rarr;</span>
+      </button>
+
+      <button class="role-card" (click)="auth.doLogin('nike')">
+        <div class="rc-ic" style="background:rgba(255,255,255,.16);color:#fff">NK</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">Brand(Nike)</div>
+          <div style="font-size:11.5px;color:rgba(234,245,238,.62)">Brand customer · scoped to your palette</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(234,245,238,.45);margin-top:3px">
+            nike.palette&#64;nike.com · TempNike#2026
+          </div>
+        </div>
+        <span style="color:var(--accent-3);font-size:18px">&rarr;</span>
+      </button>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1)">
+        <div style="font-size:11px;color:rgba(234,245,238,.5);line-height:1.6">
+          Customer accounts see only their own data. All network comparisons are anonymized aggregates.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

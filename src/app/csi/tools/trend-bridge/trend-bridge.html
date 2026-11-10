@@ -1,0 +1,75 @@
+<app-common-page-header
+  eyebrow="External mapping &middot; 30 / 30 matched"
+  title="Trend-Bridge"
+  desc="Translates agency trend palettes (WGSN, Pantone, Coloro, PV) into production-ready CSI standards."
+>
+  <button
+    class="btn-ghost"
+    [class.on]="showCompare()"
+    (click)="showCompare.set(!showCompare())"
+  >
+    {{ showCompare() ? 'Hide report compare' : 'Sample external report' }}
+  </button>
+</app-common-page-header>
+
+<div class="note" style="margin-bottom:16px">
+  <span>&#x2726;</span>
+  <span>
+    Every shade forecasted by major agencies is linked to the closest dye-proven CSI standard within &Delta;E 3.0. Designers can execute an external trend the same day without lab-dip delays.
+  </span>
+</div>
+
+@if (showCompare()) {
+  <app-trend-bridge-compare initialSampleKey="wgsn" />
+}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px">
+  @for (t of filteredTrends(); track (t.trend || t.name) + t.source) {
+    <div
+      class="card"
+      style="cursor:pointer;margin-bottom:0"
+      (click)="openColor(t.anchor?.id)"
+    >
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="position:relative">
+          <div
+            class="sw"
+            [style.background]="t.hex"
+            style="border-radius:9px;width:44px;height:44px"
+          ></div>
+          <div
+            class="sw"
+            [style.background]="t.anchor?.hex || '#ccc'"
+            style="border-radius:9px;width:34px;height:34px;position:absolute;bottom:-6px;right:-8px;border:2px solid var(--card)"
+          ></div>
+        </div>
+        <div style="flex:1;min-width:0;margin-left:6px">
+          <div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;font-family:var(--mono)">
+            {{ t.source }}
+          </div>
+          <div style="font-weight:700;font-size:13.5px">{{ t.trend }}</div>
+          <div style="font-size:11px;color:var(--text-soft);margin-top:2px">
+            matched to <b>{{ t.anchor?.name || '—' }}</b>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <span
+            class="badge"
+            [ngClass]="
+              (t.anchor?.de || 0) < 1.5
+                ? 'b-Breakout'
+                : (t.anchor?.de || 0) < 2.5
+                ? 'b-Core'
+                : 'b-Emerging'
+            "
+          >
+            &Delta;E {{ t.anchor?.de ? t.anchor?.de?.toFixed(2) : '—' }}
+          </span>
+          <div style="font-size:9.5px;color:var(--text-faint);font-family:var(--mono);margin-top:3px">
+            {{ t.anchor?.id || '' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

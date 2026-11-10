@@ -1,0 +1,168 @@
+<div class="grid g-12" style="margin-bottom:16px">
+  <div class="card card-p">
+    <div class="card-head">
+      <div>
+        <div class="card-title">1. Upload External Report or Load Sample</div>
+        <div class="card-sub">Supports CSV / JSON / TXT shade lists or one-click sample reports</div>
+      </div>
+      <span class="pill pill-violet">Instant CMC ΔE Match</span>
+    </div>
+    <label class="dropzone" style="display:block;padding:18px;margin-bottom:12px">
+      <input
+        type="file"
+        accept=".csv,.json,.txt"
+        style="display:none"
+        (change)="onFileUpload($event)"
+      />
+      <div style="font-size:20px;margin-bottom:4px">⇪</div>
+      <div style="font-weight:700;font-size:13px">
+        Drop external trend report (.csv / .json / .txt) or click to browse
+      </div>
+      <div style="font-size:11.5px;color:var(--text-soft)">
+        Automatically extracts shade names + #HEX codes and benchmarks against CSI
+      </div>
+    </label>
+    <div
+      style="font-size:11px;font-family:var(--mono);color:var(--text-faint);margin-bottom:6px;text-transform:uppercase"
+    >
+      Or load a pre-built sample trend report:
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <button
+        class="btn btn-xs"
+        [class.btn-primary]="cmpSample() === 'wgsn'"
+        (click)="loadSample('wgsn')"
+      >
+        WGSN × Coloro AW 26/27 (5)
+      </button>
+      <button
+        class="btn btn-xs"
+        [class.btn-primary]="cmpSample() === 'pantone'"
+        (click)="loadSample('pantone')"
+      >
+        Pantone SS 26 Active (5)
+      </button>
+      <button
+        class="btn btn-xs"
+        [class.btn-primary]="cmpSample() === 'pv'"
+        (click)="loadSample('pv')"
+      >
+        Première Vision Eco-Resort (4)
+      </button>
+    </div>
+    <div
+      style="font-size:11px;font-family:var(--mono);color:var(--text-faint);margin-bottom:4px;text-transform:uppercase"
+    >
+      Paste / edit shades (Name, #HEX, Season, Note):
+    </div>
+    <textarea
+      class="inp"
+       rows="5"
+      style="font-family:var(--mono);font-size:11.5px"
+      [ngModel]="customText()"
+      (ngModelChange)="customText.set($event)"
+    ></textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-sm btn-primary" (click)="runCustomCompare()">
+        ⇄ Compare Against CSI Intelligence
+      </button>
+    </div>
+  </div>
+
+  <div class="card card-p">
+    <div>
+      <div class="card-head">
+        <div>
+          <div class="card-title">{{ activeTitle() }}</div>
+          <div class="card-sub">Side-by-side comparison: External agency forecast vs CSI live production demand</div>
+        </div>
+        <span class="pill pill-leaf">Mean ΔE {{ avgDe() }}</span>
+      </div>
+      <div class="grid g-3" style="margin-bottom:12px">
+        <div style="padding:10px;background:var(--bg-2);border-radius:8px">
+          <div style="font-size:10px;color:var(--text-faint);font-family:var(--mono)">CATALOG ALIGNED (ΔE≤3.5)</div>
+          <b class="mono" style="font-size:18px;color:var(--accent)">{{ alignedCount() }} / {{ rows().length }}</b>
+        </div>
+        <div style="padding:10px;background:var(--bg-2);border-radius:8px">
+          <div style="font-size:10px;color:var(--text-faint);font-family:var(--mono)">CONFIRMED BY CSI ORDERS</div>
+          <b class="mono" style="font-size:18px;color:var(--info)">{{ risingCount() }} rising</b>
+        </div>
+        <div style="padding:10px;background:var(--bg-2);border-radius:8px">
+          <div style="font-size:10px;color:var(--text-faint);font-family:var(--mono)">MEAN PERCEPTUAL GAP</div>
+          <b class="mono" style="font-size:18px">ΔE {{ avgDe() }}</b>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>External Forecast Shade</th>
+              <th>Nearest CSI Standard</th>
+              <th>CMC ΔE</th>
+              <th>CSI Stage & Scores</th>
+              <th>Order Volume</th>
+              <th>CSI Intelligence Verdict</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.name + r.hex) {
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <span class="sw" [style.background]="r.hex"></span>
+                    <div>
+                      <b>{{ r.name }}</b>
+                      <div class="mono" style="font-size:10px;color:var(--text-faint)">
+                        {{ r.hex }} · {{ r.season }} · {{ r.note }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div
+                    (click)="openColor(r.best.id)"
+                    style="display:flex;align-items:center;gap:9px;cursor:pointer"
+                  >
+                    <span class="sw" [style.background]="r.best.hex"></span>
+                    <div>
+                      <b>{{ r.best.n }}</b>
+                      <div class="mono" style="font-size:10px;color:var(--text-faint)">
+                        {{ r.best.id }} · {{ r.best.fam }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span
+                    class="pill"
+                    [ngClass]="r.best.de < 2 ? 'pill-leaf' : r.best.de < 3.5 ? 'pill-amber' : 'pill-coral'"
+                  >
+                    ΔE {{ r.best.de.toFixed(2) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="pill" [ngClass]="'q-' + r.best.q">{{ r.best.q }}</span>
+                  <span class="mono" style="font-size:11px;margin-left:4px">
+                    E{{ r.best.e }} · T{{ r.best.t }}
+                  </span>
+                </td>
+                <td class="mono">{{ api.fmt(r.best.vol) }}</td>
+                <td>
+                  <span class="pill" [ngClass]="r.vCls">{{ r.verdict }}</span>
+                  <div style="font-size:10.5px;color:var(--text-faint);margin-top:2px">{{ r.action }}</div>
+                </td>
+                <td>
+                  <button class="btn btn-xs" (click)="toast.addToPalette(r.best.id)">
+                    + Palette
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+

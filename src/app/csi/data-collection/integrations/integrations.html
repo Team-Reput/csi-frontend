@@ -1,0 +1,29 @@
+<app-common-page-header
+  eyebrow="Connectors"
+  title="Integrations"
+  desc="Live feeds syncing dye-order data, spectrophotometer measurements, and customer systems."
+/>
+
+<div class="grid-2">
+  @for (it of items; track it.n) {
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div
+          style="width:40px;height:40px;border-radius:10px;background:var(--card-2);display:flex;align-items:center;justify-content:center;font-size:18px"
+        >
+          {{ it.ic }}
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">{{ it.n }}</div>
+          <div style="font-size:11px;color:var(--text-faint)">{{ it.t }}</div>
+        </div>
+        <span class="badge" [ngClass]="it.s === 'connected' ? 'b-Breakout' : 'b-Dormant'">
+          {{ it.s }}
+        </span>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-soft);line-height:1.5">
+        {{ it.det }}
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,131 @@
+<app-stepper-header [activeStep]="2" />
+
+<app-common-page-header
+  eyebrow="Step 2 of 3"
+  title="Preprocessing"
+  desc="Set the analysis period, then run the pipeline that turns raw orders into scored colors and trend directions."
+  [showExport]="false"
+/>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-h">
+    <h3>&#x25F7; Analysis period</h3>
+    <span class="hint">detected range: 2021 &ndash; 2025</span>
+  </div>
+  <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+    <div>
+      <label
+        style="font-family:var(--mono);font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em"
+      >
+        Start year
+      </label>
+      <br />
+      <select
+        class="hdr-sel"
+        style="margin-top:6px;min-width:120px"
+        [ngModel]="auth.yrStart()"
+        (ngModelChange)="onStartYearChange($event)"
+      >
+        @for (y of [2021, 2022, 2023, 2024, 2025]; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
+      </select>
+    </div>
+    <div style="padding-bottom:9px;color:var(--text-faint)">&rarr;</div>
+    <div>
+      <label
+        style="font-family:var(--mono);font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em"
+      >
+        End year
+      </label>
+      <br />
+      <select
+        class="hdr-sel"
+        style="margin-top:6px;min-width:120px"
+        [ngModel]="auth.yrEnd()"
+        (ngModelChange)="onEndYearChange($event)"
+      >
+        @for (y of [2021, 2022, 2023, 2024, 2025]; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
+      </select>
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div
+        style="background:var(--card-2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;font-size:12.5px"
+      >
+        <b>{{ spanMonths() }} months</b> of history (Jan {{ auth.yrStart() }} &ndash; Dec
+        {{ auth.yrEnd() }}) &middot;
+        <span
+          [style.color]="isPeriodSufficient() ? 'var(--success)' : 'var(--warn)'"
+          style="font-weight:600"
+        >
+          {{ isPeriodSufficient() ? 'sufficient for trend scoring' : 'short window · scores less reliable' }}
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:14px">
+    <span>&#x22b9;</span>
+    <span>
+      A longer window gives the models more history to learn lifecycles and regimes. Five years is the minimum for reliable trend scoring; CSI's full archive extends to roughly twenty.
+    </span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h">
+    <h3>&#x2699; Pipeline</h3>
+    <span class="hint">{{ isRunning() ? 'running…' : pipelineDone() ? 'complete' : 'ready to run' }}</span>
+  </div>
+  <div>
+    @for (s of stages(); track s.title; let i = $index) {
+      <div
+        style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)"
+      >
+        <div
+          style="width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700"
+          [style.background]="
+            s.status === 'done'
+              ? 'var(--success-soft)'
+              : s.status === 'run'
+              ? 'var(--warn-soft)'
+              : 'var(--card-2)'
+          "
+          [style.color]="
+            s.status === 'done'
+              ? 'var(--success)'
+              : s.status === 'run'
+              ? 'var(--warn)'
+              : 'var(--text-faint)'
+          "
+        >
+          {{ s.status === 'done' ? '✓' : s.status === 'run' ? '◌' : i + 1 }}
+        </div>
+        <div
+          style="flex:1;font-size:12.5px"
+          [style.font-weight]="s.status === 'idle' ? '500' : '600'"
+        >
+          {{ s.title }}
+        </div>
+        <div
+          style="font-family:var(--mono);font-size:11px"
+          [style.color]="s.status === 'idle' ? 'var(--text-faint)' : 'var(--text-soft)'"
+        >
+          {{ s.status === 'idle' ? '·' : s.detail }}
+        </div>
+      </div>
+    }
+  </div>
+  <div style="display:flex;gap:9px;margin-top:16px">
+    <button class="btn-ghost" (click)="goBackUpload()">&larr; Back</button>
+    <button
+      class="btn-leaf"
+      style="flex:1;justify-content:center"
+      [disabled]="isRunning()"
+      (click)="runPreprocess()"
+    >
+      &#x2699; Run preprocessing
+    </button>
+  </div>
+</div>

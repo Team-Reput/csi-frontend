@@ -1,0 +1,115 @@
+@if (direction(); as d) {
+  <div style="margin-bottom:12px">
+    <button class="btn-ghost" (click)="goBack()">&larr; Back</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
+      <div>
+        <span class="badge" [ngClass]="lens() === 'emerging' ? 'b-Emerging' : 'b-Breakout'">
+          {{ lens().toUpperCase() }} DIRECTION #{{ d.dir_id }}
+        </span>
+        <h2 style="font-size:23px;font-weight:800;margin-top:6px">{{ d.leader }}</h2>
+        <p style="color:var(--text-soft);font-size:12.5px">
+          {{ d.family }} family &middot; <b>{{ d.size }}</b> perceptually grouped standards (&Delta;E &lt; 14 in L*a*b*) &middot;
+          <b>{{ api.fmt(d.vol) }}</b> historical order units
+        </p>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text-faint);font-family:var(--mono)">
+            BREAKOUT PROBABILITY
+          </div>
+          <div
+            style="font-family:var(--mono);font-size:24px;font-weight:800;color:var(--q-breakout)"
+          >
+            {{ d.breakoutProb }}%
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      style="display:flex;height:44px;border-radius:10px;overflow:hidden;margin-top:14px;border:1px solid rgba(0,0,0,.08)"
+    >
+      @for (m of d.members; track m.id) {
+        <span
+          [style.background]="m.hex"
+          [title]="m.n"
+          style="flex:1;cursor:pointer"
+          (click)="openColor(m.id)"
+        ></span>
+      }
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-h">
+        <h3>Direction demand &amp; forecast</h3>
+        <span class="badge b-Breakout">Avg score {{ d.avg }}</span>
+      </div>
+      <app-forecast-detail-card
+        [history]="d.history || []"
+        [forecast]="d.forecast || []"
+        [lo]="d.fcLo || []"
+        [hi]="d.fcHi || []"
+        [color]="lens() === 'emerging' ? '#e0932f' : '#16a34a'"
+        [height]="210"
+      />
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>Where it's being adopted</h3>
+        <span class="hint">top brands driving demand</span>
+      </div>
+      @if (topBrands() && topBrands().length) {
+        @for (b of topBrands(); track b.name) {
+          <div style="margin-bottom:11px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <b>{{ b.name }}</b>
+              <span class="mono" style="font-size:11px;color:var(--text-soft)">
+                {{ api.fmt(b.vol) }} units &middot; <b>{{ b.share }}%</b>
+              </span>
+            </div>
+            <div class="pbar">
+              <span [style.width.%]="b.share * 2"></span>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="empty">Limited historical brand records</div>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <h3>Member Shades in This Direction ({{ d.size }})</h3>
+      <span class="hint">click any shade to inspect details</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+      @for (m of memberDetails(); track m.id) {
+        <div
+          class="list-row"
+          style="padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card-2);margin:0"
+          (click)="openColor(m.id)"
+        >
+          <span class="sw-sm" [style.background]="m.hex"></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:12px">{{ m.n }}</div>
+            <div class="mono" style="font-size:10px;color:var(--text-faint)">
+              {{ m.id }} &middot; E{{ m.e }} &middot; T{{ m.t }}
+            </div>
+          </div>
+          <button
+            class="btn-ghost btn-xs"
+            (click)="$event.stopPropagation(); toast.addToPalette(m.id)"
+          >
+            +
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

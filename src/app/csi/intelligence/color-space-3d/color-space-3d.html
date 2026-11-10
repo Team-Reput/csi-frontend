@@ -1,0 +1,110 @@
+<app-common-page-header
+  eyebrow="Perceptual color space"
+  [title]="isNike() ? 'Nike · 3D Color Space' : '3D Color Space'"
+  desc="Trend directions in LAB space &middot; each dot a color, each circle a cluster. Drag to rotate, shift-drag to move, scroll or +/− to zoom."
+>
+  <button
+    class="btn-ghost"
+    [class.on]="lens() === 'emerging'"
+    (click)="lens.set('emerging')"
+  >
+    &nearr; Emerging
+  </button>
+  <button
+    class="btn-ghost"
+    [class.on]="lens() === 'trending'"
+    (click)="lens.set('trending')"
+  >
+    &diams; Trending
+  </button>
+</app-common-page-header>
+
+<div
+  class="stage3d"
+  id="stage3d"
+  style="padding:8px;position:relative;margin-bottom:18px"
+  (mousedown)="onMouseDown($event)"
+  (mousemove)="onStageHover($event)"
+  (mouseleave)="onStageMouseLeave()"
+  (click)="onStageClick($event)"
+  (wheel)="onWheel($event)"
+  (contextmenu)="$event.preventDefault()"
+>
+  <div class="grid-glow"></div>
+  <div [innerHTML]="stageSvg()"></div>
+
+  <div class="zoom-ctrl">
+    <button (click)="zoom3d(1)" title="Zoom in">+</button>
+    <button (click)="zoom3d(-1)" title="Zoom out">&minus;</button>
+  </div>
+
+  @if (tipVisible()) {
+    <div
+      id="stage3dTip"
+      style="display:block"
+      [style.left.px]="tipX()"
+      [style.top.px]="tipY()"
+      [innerHTML]="tipHtml()"
+    ></div>
+  }
+
+  <div
+    style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px 12px;flex-wrap:wrap;gap:8px"
+  >
+    <span style="font-size:11px;color:rgba(255,255,255,.55);font-family:var(--mono)">
+      drag rotate &middot; shift-drag move &middot; scroll or +/− to zoom ({{ (zoom() * 100).toFixed(0) }}%) &middot; hover circle for detail
+    </span>
+    <div style="display:flex;gap:8px">
+      <button
+        class="btn-ghost"
+        style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);color:#fff"
+        (click)="resetView3d()"
+      >
+        &#x2922; Reset view
+      </button>
+      <button
+        class="btn-ghost"
+        style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);color:#fff"
+        (click)="toggleSpin()"
+      >
+        {{ autoSpin() ? '⏸ Pause' : '&#x21bb; Auto-rotate' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h">
+    <h3 [style.color]="lens() === 'emerging' ? 'var(--q-emerging)' : 'var(--q-breakout)'">
+      {{ activeDirs().length }} {{ lens() }} clusters
+    </h3>
+    <span class="hint">click any card to open its dedicated screen</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+    @for (d of activeDirs(); track d.dir_id) {
+      <div
+        class="list-row"
+        style="border:1px solid var(--border);border-radius:11px;padding:11px;margin:0"
+        (click)="openDir(d.dir_id)"
+      >
+        <div class="sw-stack">
+          @for (m of d.members.slice(0, 3); track m.id) {
+            <div [style.background]="m.hex"></div>
+          }
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;font-weight:700">{{ d.leader }}</div>
+          <div style="font-size:10px;color:var(--text-faint)">
+            {{ d.size }} colors &middot; {{ d.family }}
+          </div>
+        </div>
+        <span
+          style="font-weight:800;font-size:13px"
+          [style.color]="lens() === 'emerging' ? 'var(--q-emerging)' : 'var(--q-breakout)'"
+        >
+          {{ d.avg }}
+        </span>
+      </div>
+    }
+  </div>
+</div>

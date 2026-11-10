@@ -1,0 +1,66 @@
+<app-common-page-header
+  eyebrow="Tools"
+  title="Palette Studio &amp; Exporter"
+  desc="Curate seasonal color capsules from Emerging and Breakout shades, verify perceptual balance, and export ASE / QTX / CSV specs to PLM."
+>
+  <button
+    class="btn-leaf btn-sm"
+    (click)="toast.showToast('Exported to PLM', 'Adobe ASE + Datacolor QTX + CSV bundle generated')"
+  >
+    &darr; Export ASE / QTX / CSV
+  </button>
+</app-common-page-header>
+
+<div class="card">
+  <div class="card-h">
+    <h3>Active Working Palette ({{ paletteItems().length }} shades)</h3>
+    <button class="btn-ghost btn-xs" (click)="clearAll()">Reset</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+    @for (c of paletteItems(); track c.id) {
+      <div class="card pad0" style="margin-bottom:0">
+        <div [style.background]="c.hex" style="height:86px"></div>
+        <div style="padding:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b>{{ c.n }}</b>
+            <span class="badge" [ngClass]="'b-' + c.q">{{ c.q }}</span>
+          </div>
+          <div class="mono" style="font-size:11px;color:var(--text-faint);margin-top:3px">
+            {{ c.id }} &middot; {{ c.hex }} &middot; L*{{ c.L }} a*{{ c.a }} b*{{ c.b }}
+          </div>
+          <div
+            style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11.5px"
+          >
+            <span>Emergence <b>{{ c.e }}</b></span>
+            <span>Trend <b>{{ c.t }}</b></span>
+            <button class="btn-ghost btn-xs" (click)="openColor(c.id)">Inspect &rarr;</button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h">
+    <h3>Suggested Complementary Breakout Shades</h3>
+    <span class="hint">click to add to capsule</span>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    @for (c of suggestedShades(); track c.id) {
+      <div
+        (click)="toast.addToPalette(c.id)"
+        class="list-row"
+        style="padding:7px 11px;border:1px solid var(--border);border-radius:9px;background:var(--card-2);margin:0"
+      >
+        <span class="sw-sm" [style.background]="c.hex"></span>
+        <div>
+          <b style="font-size:12px">{{ c.n }}</b>
+          <div class="mono" style="font-size:10px;color:var(--text-faint)">
+            E{{ c.e }} &middot; + Add
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>
